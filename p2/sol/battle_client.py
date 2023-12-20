@@ -31,6 +31,7 @@ def main():
     # Creamos nuestro jugador
     input('Fase de preparación. Pulsa intro para comenzar')
     j1 = Jugador()
+    j1.posicionar_equipo()
     s.sendall(pickle.dumps(True))
     print('Tablero preparado. Esperando al oponente...\n')
 

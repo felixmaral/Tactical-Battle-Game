@@ -4,6 +4,7 @@ import pickle
 import sys
 import threading
 from cola import Cola, Nodo
+from jugador import Jugador
 
 # puerto = int(sys.argv[1])
 # max_partidas = int(sys.argv[2])
@@ -18,6 +19,8 @@ lock_cola_espera = threading.Lock()  # Agrega la declaración del candado aquí
 usuarios_lobby = []
 partidas_en_curso = []
 cola_espera = Cola()
+jugador = Jugador()
+
 
 class Partida:
     def __init__(self, j1, j2):
@@ -61,16 +64,12 @@ def bienvenida_usuario(clt_socket):
     # Meter cliente a lobby o emparejar si hay alguien esperando
     lock_lobby.acquire()
     if len(usuarios_lobby) != 0:  # Alguien esperando a jugar, emparejar
-        
-        usuarios_lobby.append(Cliente(nombre_decoded,clt_socket))
-        j2 = usuarios_lobby[1]
-        j1 = usuarios_lobby[0]
+        j1= usuarios_lobby[0]
+        j2=Cliente(nombre_decoded,clt_socket)
 
         lock_partidas.acquire()
         try:
             if len(partidas_en_curso) < max_partidas:  # Asegurémonos de que no exceda el límite
-                usuarios_lobby.remove(usuarios_lobby[1])
-                usuarios_lobby.remove(usuarios_lobby[0])
                 juego = Partida(j1, j2)
                 partidas_en_curso.append(juego)
                 threading.Thread(target=jugar_partida, args=(juego,)).start()
@@ -85,30 +84,36 @@ def bienvenida_usuario(clt_socket):
 
     else:  # Registrar usuario al lobby
         usuarios_lobby.append(Cliente(nombre_decoded, clt_socket))  # Usuario en lobby
-        
-        if len(partidas_en_curso) >= max_partidas:
-            try:
-                lock_cola_espera.acquire()
-                cola_espera.encolar(usuarios_lobby[0])
-            finally:
-                lock_cola_espera.release()
-                print(f'Cliente en cola de espera ({cola_espera.size} en espera)')
+        lock_cola_espera.acquire()
+        if cola_espera.size != 0 and len(partidas_en_curso) < max_partidas:
+            cliente_en_espera = cola_espera.desencolar()
+            j1 = cliente_en_espera
+            j2 = cliente_en_espera
 
+            lock_partidas.acquire()
+            try:
+                if len(partidas_en_curso) == max_partidas:
+                    cola_espera.encolar(j2)
+                    print(f'Cliente en cola de espera ({cola_espera.size} en espera)')
+
+                else:
+                    juego = Partida(j1, j2)
+                    partidas_en_curso.append(juego)
+                    threading.Thread(target=jugar_partida, args=(juego,)).start()
+                    print(f'{len(partidas_en_curso)} partidas en curso')
+            finally:
+                lock_partidas.release()
+        lock_cola_espera.release()
     lock_lobby.release()
 
 def terminar_partida():
     global lock_partidas, cola_espera, partidas_en_curso
     lock_partidas.acquire()
     try:
-        if len(partidas_en_curso) < max_partidas and cola_espera.size >= 2:
+        while len(partidas_en_curso) < max_partidas  and cola_espera.size >= 2:
    
             j1 = cola_espera.desencolar()
             j2 = cola_espera.desencolar()
-
-            lock_lobby.acquire()
-            usuarios_lobby.remove(usuarios_lobby[1])
-            usuarios_lobby.remove(usuarios_lobby[0])
-            lock_lobby.release()
 
             juego = Partida(j1,j2)
             partidas_en_curso.append(juego)
@@ -118,7 +123,53 @@ def terminar_partida():
             lock_partidas.release()
 
 
+def ranking(j1, j2, ganador, turno, partida):
+    global jugador
+    # Puntuaciones base
+    puntuacion_ganador = 1000
+    puntuacion_perdedor = 0
+
+    # Puntuación por personajes vivos y eliminados
+    puntuacion_vivos_j1 = sum(100 for personaje in jugador.info_vivos())
+    puntuacion_vivos_j2 = sum(100 for personaje in jugador.info_vivos())
+    j1_vivos = jugador.info_vivos()
+    j2_vivos = jugador.info_vivos()
+    puntuacion_eliminados_j1 =  100 * (4 - len(j2_vivos))
+    puntuacion_eliminados_j2 = 100 * (4 - len(j1_vivos))
+
+    # Puntuación por turnos restantes (máximo 200 puntos)
+    puntuacion_turnos_g = max(0, (20 - (turno * 2))) * 20
+    puntuacion_turnos_p = 0
+    if (turno * 2) > 10: ((turno * 2) - 10) * 20
+
+    # Asignación de puntuaciones al ganador y perdedor
+    if j1 is ganador:
+        puntuacion_ganador += puntuacion_vivos_j1 + puntuacion_eliminados_j1 + puntuacion_turnos_g
+        puntuacion_perdedor += puntuacion_vivos_j2 + puntuacion_eliminados_j2 + puntuacion_turnos_p
+    elif j2 is ganador:
+        puntuacion_ganador += puntuacion_vivos_j2 + puntuacion_eliminados_j2 + puntuacion_turnos_g
+        puntuacion_perdedor += puntuacion_vivos_j1 + puntuacion_eliminados_j1 + puntuacion_turnos_p
+
+    puntuaciones = {
+        partida.j1.nombre: puntuacion_ganador if j1 is ganador else puntuacion_perdedor,
+        partida.j2.nombre: puntuacion_ganador if j2 is ganador else puntuacion_perdedor
+    }
+    print(turno)
+
+    for jugador, puntuacion in puntuaciones.items():
+        print(f'{jugador}: {puntuacion}')
+
+
+    # Actualizamos ranking con puntuacion de los jugadores
+    # Insertamos las puntuaciones en la lista doblemente enlazada manteniendo orden descendente
+    # Devolvemos ranking actualizado
+    # return lista_ranking_actualizada
+
+
+
+
 def jugar_partida(partida):
+
     global partidas_en_curso
     print(f"Partida comenzada entre {partida.j1.nombre} y {partida.j2.nombre}")
 
@@ -163,9 +214,9 @@ def jugar_partida(partida):
         if resultado_decodificado is not None and resultado_decodificado["victoria"]:
             print("Partida terminada. Ha ganado:", jugadores[jugador_activo].nombre)
             # TODO Actualizar algo en la lista de partidas?
-            lock_partidas.acquire()
+            ganador = jugadores[jugador_activo]
+            ranking(jugadores[0], jugadores[1], ganador, turno, partida)
             partidas_en_curso.remove(partida)
-            lock_partidas.release()
             terminar_partida()
             break
 

@@ -6,9 +6,11 @@ class Jugador:
     def __init__(self):
         self.oponente = None
         self.equipo = []
-        self.crear_equipo()
-        self.posicionar_equipo()
+        self.crear_equipo() # Declaro el posicionamiento en el cliente para poder utilizar la clase sin ejecutarlo.
+        self.info_vivos()
+
         self.informe = None
+
 
     def set_oponente(self, jugador):
         assert issubclass(type(jugador),
@@ -82,8 +84,10 @@ class Jugador:
                         if per.vida_actual == 0:
                             respuesta += '{} ha sido eliminado\n'.format(per.nombre)
                             bajas.append(idx)
+                            self.info_vivos()
                         else:
                             respuesta += '{} ha sido herido en {} [Vida restante: {}]\n'.format(per.nombre, per.posicion, per.vida_actual)
+                            
 
             for idx in bajas:
                 del self.equipo[idx]  # Borrar del equipo
@@ -181,3 +185,7 @@ class Jugador:
                 contador_acciones += 1
 
         return acciones_disponibles
+
+    def info_vivos(self):
+        self.equipo = [per for per in self.equipo if per.vida_actual > 0]
+        return self.equipo
