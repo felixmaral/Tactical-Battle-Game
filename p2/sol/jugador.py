@@ -7,7 +7,6 @@ class Jugador:
         self.oponente = None
         self.equipo = []
         self.crear_equipo() # Declaro el posicionamiento en el cliente para poder utilizar la clase sin ejecutarlo.
-        self.info_vivos()
 
         self.informe = None
 
@@ -186,6 +185,5 @@ class Jugador:
 
         return acciones_disponibles
 
-    def info_vivos(self):
-        self.equipo = [per for per in self.equipo if per.vida_actual > 0]
-        return self.equipo
+    def info_vivos(self) -> int:
+        return len(self.equipo)
