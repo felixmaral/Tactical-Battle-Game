@@ -61,6 +61,9 @@ def main():
 
             if victoria:
                 print("***** Has perdido la partida! *****")
+                v = len(j1.equipo)
+                vivos = str(v)
+                s.sendall(vivos.encode())
                 break
         else:
             input('Es tu turno. Pulsa intro para comenzar')
@@ -95,6 +98,9 @@ def main():
                 print('Turno terminado')
             else:
                 print("***** Has ganado la partida! *****")
+                v = len(j1.equipo)
+                vivos = str(v)
+                s.sendall(vivos.encode())
                 break
 
         # Cambiar jugador

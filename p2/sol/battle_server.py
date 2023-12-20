@@ -28,6 +28,7 @@ class Cliente:
     def __init__(self, nombre, skt):
         self.nombre = nombre
         self.socket = skt
+        self.info_vivos = None
 
 def manejar_cola_espera():
     while True:
@@ -117,6 +118,49 @@ def terminar_partida():
     finally:    
             lock_partidas.release()
 
+def ranking(j1, j2, ganador, turno, partida):
+    
+    # Puntuaciones base
+    puntuacion_ganador = 1000
+    puntuacion_perdedor = 0
+
+    # Puntuación por personajes vivos y eliminados
+    puntuacion_vivos_j1 = 100 * j1.info_vivos
+    puntuacion_vivos_j2 = 100 * j2.info_vivos
+    
+    puntuacion_eliminados_j1 =  100 * (4 - j2.info_vivos)
+    puntuacion_eliminados_j2 = 100 * (4 - j1.info_vivos)
+
+    # Puntuación por turnos restantes (máximo 200 puntos)
+    puntuacion_turnos_g = max(0, (20 - (turno))) * 20
+    puntuacion_turnos_p = 0
+    if (turno) > 10: 
+        ((turno) - 10) * 20
+
+    # Asignación de puntuaciones al ganador y perdedor
+    if j1 is ganador:
+        puntuacion_ganador += puntuacion_vivos_j1 + puntuacion_eliminados_j1 + puntuacion_turnos_g
+        puntuacion_perdedor += puntuacion_vivos_j2 + puntuacion_eliminados_j2 + puntuacion_turnos_p
+    elif j2 is ganador:
+        puntuacion_ganador += puntuacion_vivos_j2 + puntuacion_eliminados_j2 + puntuacion_turnos_g
+        puntuacion_perdedor += puntuacion_vivos_j1 + puntuacion_eliminados_j1 + puntuacion_turnos_p
+
+    puntuaciones = {
+        partida.j1.nombre: puntuacion_ganador if j1 is ganador else puntuacion_perdedor,
+        partida.j2.nombre: puntuacion_ganador if j2 is ganador else puntuacion_perdedor
+    }
+
+    print(turno)
+
+    for jugador, puntuacion in puntuaciones.items():
+        print(f'{jugador}: {puntuacion}')
+
+
+    # Actualizamos ranking con puntuacion de los jugadores
+    # Insertamos las puntuaciones en la lista doblemente enlazada manteniendo orden descendente
+    # Devolvemos ranking actualizado
+    # return lista_ranking_actualizada
+
 
 def jugar_partida(partida):
     global partidas_en_curso
@@ -163,9 +207,14 @@ def jugar_partida(partida):
         if resultado_decodificado is not None and resultado_decodificado["victoria"]:
             print("Partida terminada. Ha ganado:", jugadores[jugador_activo].nombre)
             # TODO Actualizar algo en la lista de partidas?
-            lock_partidas.acquire()
+            v1 = jugadores[0].socket.recv(1024).decode()
+            v2 = jugadores[1].socket.recv(1024).decode()
+
+            jugadores[0].info_vivos = int(v1)
+            jugadores[1].info_vivos = int(v2)
+            ganador = jugadores[jugador_activo]
+            ranking(jugadores[0], jugadores[1], ganador, turno, partida)
             partidas_en_curso.remove(partida)
-            lock_partidas.release()
             terminar_partida()
             break
 
