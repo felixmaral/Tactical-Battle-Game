@@ -5,11 +5,11 @@ import sys
 import threading
 from cola import Cola, Nodo
 
-# puerto = int(sys.argv[1])
-# max_partidas = int(sys.argv[2])
+# python3 servidor.py <puerto> <numero_partidas_simultaneas> 
 
-puerto = 5555
-max_partidas = 1
+puerto = int(sys.argv[1])
+max_partidas = int(sys.argv[2])
+file = sys.argv[3]
 
 lock_lobby = threading.Lock()
 lock_partidas = threading.Lock()
@@ -29,6 +29,7 @@ class Cliente:
         self.nombre = nombre
         self.socket = skt
         self.info_vivos = None
+        self.score = None
 
 def manejar_cola_espera():
     while True:
@@ -119,6 +120,8 @@ def terminar_partida():
             lock_partidas.release()
 
 def ranking(j1, j2, ganador, turno, partida):
+
+    global file
     
     # Puntuaciones base
     puntuacion_ganador = 1000
@@ -152,18 +155,27 @@ def ranking(j1, j2, ganador, turno, partida):
     puntuaciones = {
         partida.j1.nombre: str(puntuacion_ganador) if j1 is ganador else str(puntuacion_perdedor),
         partida.j2.nombre: str(puntuacion_ganador) if j2 is ganador else str(puntuacion_perdedor)
-    }    
+    }
+
+    if j1 is ganador:
+        j1.score = puntuacion_ganador
+        j2.score = puntuacion_perdedor
+    else:
+        j1.score = puntuacion_perdedor
+        j2.score = puntuacion_ganador
 
     print(turno)
 
     for jugador, puntuacion in puntuaciones.items():
         print(f'{jugador}: {puntuacion}')
-    
-    file = 'ranking_simple.txt'
 
     with open(file, 'a') as file:
         for clave, valor in puntuaciones.items():
             file.write(f'{clave}: {valor}\n')
+    
+    scores = [j1.score, j2.score]
+    
+    return scores
 
 def jugar_partida(partida):
     global partidas_en_curso
@@ -210,13 +222,21 @@ def jugar_partida(partida):
         if resultado_decodificado is not None and resultado_decodificado["victoria"]:
             print("Partida terminada. Ha ganado:", jugadores[jugador_activo].nombre)
             # TODO Actualizar algo en la lista de partidas?
+
             v1 = jugadores[0].socket.recv(1024).decode()
             v2 = jugadores[1].socket.recv(1024).decode()
 
             jugadores[0].info_vivos = int(v1)
             jugadores[1].info_vivos = int(v2)
             ganador = jugadores[jugador_activo]
-            ranking(jugadores[0], jugadores[1], ganador, turno, partida)
+            scores = ranking(jugadores[0], jugadores[1], ganador, turno, partida)
+
+            score1 = (str(scores[0])).encode()
+            score2 = (str(scores[1])).encode()
+
+            jugadores[0].socket.sendall(score1)
+            jugadores[1].socket.sendall(score2)
+
             partidas_en_curso.remove(partida)
             terminar_partida()
             break

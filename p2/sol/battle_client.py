@@ -6,8 +6,8 @@ import sys
 import socket
 import time
 
-ip = '127.0.0.1'
-puerto = 5555
+ip = sys.argv[1]
+puerto = int(sys.argv[2])
 
 def main():
     # Conectamos con el servidor
@@ -66,6 +66,8 @@ def main():
                 v = len(j1.equipo)
                 vivos = str(v)
                 s.sendall(vivos.encode())
+                score = s.recv(1024).decode()
+                print(f'Tu puntuación ha sido: {score}')
                 break
         else:
             input('Es tu turno. Pulsa intro para comenzar')
@@ -103,6 +105,8 @@ def main():
                 v = len(j1.equipo)
                 vivos = str(v)
                 s.sendall(vivos.encode())
+                score = s.recv(1024).decode()
+                print(f'Tu puntuación ha sido: {score}')
                 break
 
         # Cambiar jugador

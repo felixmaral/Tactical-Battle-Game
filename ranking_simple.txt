@@ -1,2 +1,8 @@
 pepe: 300
 messi: 1800
+Zai: 1900
+Felix: 200
+Felix: 200
+Zaira: 1900
+Pepa: 1900
+Fulano: 200
