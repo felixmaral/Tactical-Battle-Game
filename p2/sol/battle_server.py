@@ -161,8 +161,8 @@ def ranking(j1, j2, ganador, turno, partida):
     
     file = 'ranking_simple.txt'
 
-    with open(file, 'w') as file:
-        for clave, valor in puntuacion.items():
+    with open(file, 'a') as file:
+        for clave, valor in puntuaciones.items():
             file.write(f'{clave}: {valor}\n')
 
 def jugar_partida(partida):
