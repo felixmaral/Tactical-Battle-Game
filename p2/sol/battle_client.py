@@ -4,6 +4,7 @@ from utils import limpiar_terminal
 from jugador import Jugador
 import sys
 import socket
+import time
 
 ip = '127.0.0.1'
 puerto = 5555
@@ -61,6 +62,7 @@ def main():
 
             if victoria:
                 print("***** Has perdido la partida! *****")
+                time.sleep(3)
                 v = len(j1.equipo)
                 vivos = str(v)
                 s.sendall(vivos.encode())

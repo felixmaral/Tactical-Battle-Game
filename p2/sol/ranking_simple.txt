@@ -1,0 +1,6 @@
+valeria:1380
+lia:1300
+victor:1000
+joan:740
+alex:620
+valeria:500

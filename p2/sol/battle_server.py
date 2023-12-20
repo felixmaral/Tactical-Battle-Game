@@ -135,7 +135,7 @@ def ranking(j1, j2, ganador, turno, partida):
     puntuacion_turnos_g = max(0, (20 - (turno))) * 20
     puntuacion_turnos_p = 0
     if (turno) > 10: 
-        ((turno) - 10) * 20
+       puntuacion_turnos_p = ((turno) - 10) * 20
 
     # Asignación de puntuaciones al ganador y perdedor
     if j1 is ganador:
@@ -145,22 +145,25 @@ def ranking(j1, j2, ganador, turno, partida):
         puntuacion_ganador += puntuacion_vivos_j2 + puntuacion_eliminados_j2 + puntuacion_turnos_g
         puntuacion_perdedor += puntuacion_vivos_j1 + puntuacion_eliminados_j1 + puntuacion_turnos_p
 
+    if puntuacion_ganador < puntuacion_perdedor:
+        puntuacion_perdedor = 900
+        puntuacion_ganador = 1000
+
     puntuaciones = {
-        partida.j1.nombre: puntuacion_ganador if j1 is ganador else puntuacion_perdedor,
-        partida.j2.nombre: puntuacion_ganador if j2 is ganador else puntuacion_perdedor
-    }
+        partida.j1.nombre: str(puntuacion_ganador) if j1 is ganador else str(puntuacion_perdedor),
+        partida.j2.nombre: str(puntuacion_ganador) if j2 is ganador else str(puntuacion_perdedor)
+    }    
 
     print(turno)
 
     for jugador, puntuacion in puntuaciones.items():
         print(f'{jugador}: {puntuacion}')
+    
+    file = 'ranking_simple.txt'
 
-
-    # Actualizamos ranking con puntuacion de los jugadores
-    # Insertamos las puntuaciones en la lista doblemente enlazada manteniendo orden descendente
-    # Devolvemos ranking actualizado
-    # return lista_ranking_actualizada
-
+    with open(file, 'w') as file:
+        for clave, valor in puntuacion.items():
+            file.write(f'{clave}: {valor}\n')
 
 def jugar_partida(partida):
     global partidas_en_curso
