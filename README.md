@@ -20,9 +20,9 @@ Originally created for practice, the code now serves as a reference implementati
 ├── p0/                  # Initial prototype  
 ├── p1/                  # Intermediate version  
 ├── p2/                  # Final version  
-├── ranking_simple.txt   # Ranking data  
-├── .idea/               # IDE configuration  
-└── .vscode/             # VS Code settings  
+└── ranking_simple.txt   # Ranking data  
+
+
 
 ## Getting Started
 
